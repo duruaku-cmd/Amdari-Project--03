@@ -16,9 +16,10 @@ BVN_LOOKUP_URL = os.environ.get("BVN_LOOKUP_URL", "https://api.mock-cbn.local/bv
 def verify_bvn():
     """Verify a BVN against the upstream lookup service.
 
-    The 'provider' field allows merchants to specify alternative providers
-    for regions where the default CBN endpoint isn't applicable.
-    SSRF variant: an attacker controls the URL the server fetches.
+    NOTE: the SSRF in this endpoint (V-APP-04 — caller controls `provider`) is
+    INTENTIONALLY NOT fixed today. Day 5 is scoped to the four critical-path
+    items (SQLi, JWT, IDOR, race). SSRF is remediated on Day 6. Left as-is so the
+    Day 5 commit set stays clean.
     """
     data = request.get_json() or {}
     bvn = data.get("bvn")
@@ -39,7 +40,9 @@ def verify_bvn():
 def lookup_kyc():
     """Look up a KYC record by BVN or NIN.
 
-    SQLi variant in the kyc-api service. Same root cause as V-APP-01.
+    V-APP-01 FIX: bvn/nin are now bound parameters, not concatenated into the
+    SQL. A single parameterised statement is used; the column to filter on is
+    chosen by safe server-side branching, never from user text.
     """
     bvn = request.args.get("bvn", "")
     nin = request.args.get("nin", "")
@@ -48,13 +51,12 @@ def lookup_kyc():
     cur = conn.cursor()
     try:
         if bvn:
-            query = f"SELECT * FROM kyc_records WHERE bvn = '{bvn}'"
+            cur.execute("SELECT * FROM kyc_records WHERE bvn = %s", (bvn,))
         elif nin:
-            query = f"SELECT * FROM kyc_records WHERE nin = '{nin}'"
+            cur.execute("SELECT * FROM kyc_records WHERE nin = %s", (nin,))
         else:
             return jsonify({"error": "bvn or nin required"}), 400
 
-        cur.execute(query)
         records = cur.fetchall()
         return jsonify([dict(r) for r in records])
     finally:

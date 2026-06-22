@@ -1,15 +1,28 @@
-"""Shared auth helpers (duplicated from payments-api — known tech debt)."""
+"""Auth helpers for kyc-api.
+
+V-APP-02 (Broken JWT Validation) remediated on Day 5 — identical fix to
+payments-api. The two services still duplicate this module (known tech debt);
+consolidating into a shared library is noted for later. For now BOTH copies are
+fixed, because fixing only one leaves the other service forgeable.
+"""
 import os
 import jwt
 from functools import wraps
 from flask import request, jsonify
 
-JWT_SECRET = os.environ.get("JWT_SECRET", "sentinelpay-dev-secret")
+JWT_SECRET = os.environ.get("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError(
+        "JWT_SECRET is not set. Refusing to start with an insecure default."
+    )
+
+JWT_ALGORITHM = "HS256"
 
 
 def decode_token(token: str) -> dict:
-    # Same broken verifier as payments-api. Two services, one bug.
-    return jwt.decode(token, JWT_SECRET, algorithms=["HS256", "none"], options={"verify_signature": False})
+    """Decode AND verify a JWT. V-APP-02 fix: verification on, only HS256, no
+    'none', no insecure default secret."""
+    return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 
 
 def require_auth(f):
