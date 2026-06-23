@@ -5,10 +5,12 @@ from flask import Blueprint, request, jsonify
 
 from app.db import get_connection
 from app.auth import require_auth
+from app.security import validate_outbound_url, UnsafeURLError, audit
 
 webhooks_bp = Blueprint("webhooks", __name__)
 
 WEBHOOK_TIMEOUT = int(os.environ.get("WEBHOOK_TIMEOUT", "10"))
+MAX_RESPONSE_BYTES = 5000
 
 
 @webhooks_bp.route("/", methods=["POST"])
@@ -40,27 +42,34 @@ def register_webhook():
 @webhooks_bp.route("/test", methods=["POST"])
 @require_auth
 def test_webhook():
-    """Test-fire a webhook by fetching the supplied URL with a sample payload.
+    """Test-fire a webhook by fetching the supplied URL.
 
-    V-APP-04: Server-Side Request Forgery. The URL is fetched with no validation
-    of scheme, host, or destination. Try /v1/webhooks/test with
-    {"url": "http://169.254.169.254/latest/meta-data/iam/security-credentials/"}
-    once this is deployed to AWS, and the EC2/Fargate instance metadata
-    credentials come back in the response body.
+    V-APP-04 FIX: the URL is validated before any request is made —
+      * http/https only;
+      * host must resolve only to public IPs (blocks 169.254.169.254 metadata,
+        loopback, and RFC1918 private ranges);
+      * redirects are disabled (a 30x can't bounce us to a blocked host);
+      * the response body is size-capped.
     """
     data = request.get_json() or {}
     url = data.get("url")
-
     if not url:
         return jsonify({"error": "url required"}), 400
 
     try:
-        # No allowlist, no scheme check, no IP filter, no redirect cap.
-        resp = requests.get(url, timeout=WEBHOOK_TIMEOUT)
+        validate_outbound_url(url)
+    except UnsafeURLError as e:
+        audit("webhook.test", actor=request.current_user_id, target=url,
+              outcome="blocked", reason=str(e))
+        return jsonify({"error": f"refused to fetch URL: {e}"}), 400
+
+    try:
+        resp = requests.get(url, timeout=WEBHOOK_TIMEOUT, allow_redirects=False, stream=True)
+        body = resp.raw.read(MAX_RESPONSE_BYTES, decode_content=True)
+        audit("webhook.test", actor=request.current_user_id, target=url, outcome="success")
         return jsonify({
             "status_code": resp.status_code,
-            "headers": dict(resp.headers),
-            "body": resp.text[:5000]
+            "body": body.decode("utf-8", errors="replace")
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return jsonify({"error": "request failed"}), 502

@@ -5,10 +5,15 @@ from flask import Blueprint, request, jsonify
 
 from app.db import get_connection
 from app.auth import require_auth
+from app.security import validate_outbound_url, UnsafeURLError, audit
 
 verify_bp = Blueprint("verify", __name__)
 
 BVN_LOOKUP_URL = os.environ.get("BVN_LOOKUP_URL", "https://api.mock-cbn.local/bvn")
+# V-APP-04: only these provider hosts may be contacted for BVN verification.
+_ALLOWED_PROVIDER_HOSTS = set(
+    h.strip() for h in os.environ.get("BVN_PROVIDER_ALLOWLIST", "").split(",") if h.strip()
+)
 
 
 @verify_bp.route("/bvn", methods=["POST"])
@@ -16,10 +21,9 @@ BVN_LOOKUP_URL = os.environ.get("BVN_LOOKUP_URL", "https://api.mock-cbn.local/bv
 def verify_bvn():
     """Verify a BVN against the upstream lookup service.
 
-    NOTE: the SSRF in this endpoint (V-APP-04 — caller controls `provider`) is
-    INTENTIONALLY NOT fixed today. Day 5 is scoped to the four critical-path
-    items (SQLi, JWT, IDOR, race). SSRF is remediated on Day 6. Left as-is so the
-    Day 5 commit set stays clean.
+    V-APP-04 FIX: the provider URL is validated (http/https, public IP only, no
+    metadata/loopback/private hosts) and, if an allowlist is configured, must be
+    in it. Redirects are disabled.
     """
     data = request.get_json() or {}
     bvn = data.get("bvn")
@@ -29,24 +33,27 @@ def verify_bvn():
         return jsonify({"error": "valid 11-digit BVN required"}), 400
 
     try:
-        resp = requests.post(provider_url, json={"bvn": bvn}, timeout=10)
+        validate_outbound_url(
+            provider_url,
+            allowed_hosts=_ALLOWED_PROVIDER_HOSTS or None)
+    except UnsafeURLError as e:
+        audit("kyc.bvn_verify", actor=request.current_user_id, target=provider_url,
+              outcome="blocked", reason=str(e))
+        return jsonify({"error": f"refused to contact provider: {e}"}), 400
+
+    try:
+        resp = requests.post(provider_url, json={"bvn": bvn}, timeout=10, allow_redirects=False)
         return jsonify({"status": "ok", "provider_response": resp.text[:2000]})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return jsonify({"error": "provider request failed"}), 502
 
 
 @verify_bp.route("/lookup", methods=["GET"])
 @require_auth
 def lookup_kyc():
-    """Look up a KYC record by BVN or NIN.
-
-    V-APP-01 FIX: bvn/nin are now bound parameters, not concatenated into the
-    SQL. A single parameterised statement is used; the column to filter on is
-    chosen by safe server-side branching, never from user text.
-    """
+    """Look up a KYC record by BVN or NIN. (V-APP-01 parameterised — Day 5.)"""
     bvn = request.args.get("bvn", "")
     nin = request.args.get("nin", "")
-
     conn = get_connection()
     cur = conn.cursor()
     try:
@@ -56,9 +63,7 @@ def lookup_kyc():
             cur.execute("SELECT * FROM kyc_records WHERE nin = %s", (nin,))
         else:
             return jsonify({"error": "bvn or nin required"}), 400
-
-        records = cur.fetchall()
-        return jsonify([dict(r) for r in records])
+        return jsonify([dict(r) for r in cur.fetchall()])
     finally:
         cur.close()
         conn.close()
