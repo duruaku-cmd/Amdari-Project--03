@@ -45,3 +45,9 @@ variable "github_repo" {
   type        = string
   default     = "Amdari-Project--03"
 }
+
+variable "enable_elasticache" {
+  description = "Create the ElastiCache Redis cluster (data module). Off by default to save cost/time while validating."
+  type        = bool
+  default     = true
+}

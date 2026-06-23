@@ -30,6 +30,17 @@ module "identity" {
 module "data" {
   source      = "./modules/data"
   name_prefix = local.name_prefix
+
+  # network wiring (Day 9 outputs)
+  vpc_id             = module.network.vpc_id
+  private_subnet_ids = module.network.private_subnet_ids
+
+  # app SGs are created in the compute module on Day 11; wired in then.
+  app_security_group_ids = []
+
+  # cost/scope toggles
+  enable_elasticache = var.enable_elasticache
+  enable_db_rotation = true
 }
 
 module "compute" {

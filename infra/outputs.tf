@@ -36,3 +36,24 @@ output "kyc_task_role_arn" {
 output "github_deploy_role_arn" {
   value = module.identity.github_deploy_role_arn
 }
+
+# --- Data plane (Day 10) ---
+output "data_kms_key_arn" {
+  value = module.data.kms_key_arn
+}
+
+output "db_endpoint" {
+  value = module.data.db_endpoint
+}
+
+output "db_master_secret_arn" {
+  value = module.data.db_master_secret_arn
+}
+
+output "kyc_bucket" {
+  value = module.data.kyc_bucket
+}
+
+output "redis_endpoint" {
+  value = module.data.redis_endpoint
+}
