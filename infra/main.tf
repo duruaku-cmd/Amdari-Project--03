@@ -1,11 +1,10 @@
 # -----------------------------------------------------------------------------
 # THIN ROOT CONFIGURATION
-# This file does almost nothing itself. It only wires the five plane-modules
-# together and passes shared inputs down. All real resources live in modules,
-# which keeps the root readable and the modules independently testable (D-04).
+# Wires the five plane-modules together and passes shared inputs down.
+# Real resources live in modules (D-04: modules independently testable,
+# consumed by a thin root).
 #
-# The modules are intentionally near-empty on Day 8. They are filled in over:
-#   Day 9  -> network, identity
+#   Day 9  -> network, identity   (ACTIVE)
 #   Day 10 -> data
 #   Day 11 -> compute (+ edge)
 #   Day 12 -> observability
@@ -16,13 +15,16 @@ locals {
 }
 
 module "network" {
-  source      = "./modules/network"
-  name_prefix = local.name_prefix
+  source       = "./modules/network"
+  name_prefix  = local.name_prefix
+  nat_strategy = var.nat_strategy
 }
 
 module "identity" {
   source      = "./modules/identity"
   name_prefix = local.name_prefix
+  github_org  = var.github_org
+  github_repo = var.github_repo
 }
 
 module "data" {

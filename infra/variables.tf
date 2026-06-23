@@ -27,3 +27,21 @@ variable "cost_center" {
   type        = string
   default     = "security-platform"
 }
+
+variable "nat_strategy" {
+  description = "NAT Gateway strategy: single (cheap), per_az (HA), or none (free, no outbound). See network module."
+  type        = string
+  default     = "single"
+}
+
+variable "github_org" {
+  description = "GitHub username/org that owns the repo (OIDC trust)."
+  type        = string
+  default     = "duruaku-cmd"
+}
+
+variable "github_repo" {
+  description = "Repository name for OIDC trust."
+  type        = string
+  default     = "Amdari-Project--03"
+}
