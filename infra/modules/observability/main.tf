@@ -1,11 +1,21 @@
 # =====================================================================
-# MODULE: observability
-# Purpose (built out later this week):
-#   GuardDuty (V-CLD-07), CloudTrail w/ Object Lock + validation (V-CLD-06), Security Hub, AWS Config, honeytoken, EventBridge to Lambda containment. Day 12.
-#
-# Day 8 status: scaffold only. No resources yet, so 'terraform plan'
-# is clean and the module structure is committed up front.
+# MODULE: observability  (Day 12 - Detection Foundation)
+# Files:
+#   cloudtrail.tf          - tamper-proof audit trail (V-CLD-06)  [DEPLOYS]
+#   honeytoken.tf          - decoy credential + alarm on use      [DEPLOYS]
+#   containment.tf         - EventBridge -> Lambda containment     [DEPLOYS]
+#   detection_services.tf  - GuardDuty/SecurityHub/Config (V-CLD-07)
+#                            [account-gated; behind enable_* toggles]
 # =====================================================================
+
+terraform {
+  required_providers {
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
+    }
+  }
+}
 
 locals {
   module_name = "observability"
