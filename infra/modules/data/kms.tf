@@ -62,6 +62,7 @@ data "aws_iam_policy_document" "data_kms" {
         "elasticache.amazonaws.com",
         "secretsmanager.amazonaws.com",
         "logs.${data.aws_region.current.name}.amazonaws.com",
+        "cloudtrail.amazonaws.com",
       ]
     }
   }
