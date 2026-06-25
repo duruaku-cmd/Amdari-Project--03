@@ -75,3 +75,20 @@ output "waf_acl_arn" {
 output "ecs_cluster_name" {
   value = module.compute.ecs_cluster_name
 }
+
+# --- Detection (Day 12) ---
+output "cloudtrail_bucket" {
+  value = module.observability.cloudtrail_bucket
+}
+
+output "honeytoken_user" {
+  value = module.observability.honeytoken_user
+}
+
+output "honeytoken_alarm" {
+  value = module.observability.honeytoken_alarm
+}
+
+output "containment_lambda" {
+  value = module.observability.containment_lambda
+}

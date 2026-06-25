@@ -49,5 +49,23 @@ variable "github_repo" {
 variable "enable_elasticache" {
   description = "Create the ElastiCache Redis cluster (data module). Off by default to save cost/time while validating."
   type        = bool
-  default     = true
+  default     = false
+}
+
+variable "enable_guardduty" {
+  description = "Enable GuardDuty (observability). Off by default: this account cannot subscribe."
+  type        = bool
+  default     = false
+}
+
+variable "enable_security_hub" {
+  description = "Enable Security Hub FSBP+CIS. Off by default: account subscription required."
+  type        = bool
+  default     = false
+}
+
+variable "enable_config" {
+  description = "Enable AWS Config + CIS pack. Off by default: account subscription required."
+  type        = bool
+  default     = false
 }

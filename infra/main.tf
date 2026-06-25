@@ -63,4 +63,14 @@ module "compute" {
 module "observability" {
   source      = "./modules/observability"
   name_prefix = local.name_prefix
+
+  # CloudTrail log bucket + trail are encrypted with the data module's CMK.
+  kms_key_arn = module.data.kms_key_arn
+
+  # Account-gated paid services. This Free-Tier account returns
+  # SubscriptionRequiredException, so they default off; flip to true on a
+  # subscribing account. CloudTrail, honeytoken, and containment deploy now.
+  enable_guardduty    = var.enable_guardduty
+  enable_security_hub = var.enable_security_hub
+  enable_config       = var.enable_config
 }
