@@ -35,8 +35,9 @@ module "data" {
   vpc_id             = module.network.vpc_id
   private_subnet_ids = module.network.private_subnet_ids
 
-  # app SGs are created in the compute module on Day 11; wired in then.
-  app_security_group_ids = []
+  # Day 11 closes the loop: RDS now accepts ingress BY REFERENCE from the
+  # compute app security group (and nothing else).
+  app_security_group_ids = [module.compute.app_security_group_id]
 
   # cost/scope toggles
   enable_elasticache = var.enable_elasticache
@@ -46,6 +47,17 @@ module "data" {
 module "compute" {
   source      = "./modules/compute"
   name_prefix = local.name_prefix
+
+  # network wiring
+  vpc_id             = module.network.vpc_id
+  public_subnet_ids  = module.network.public_subnet_ids
+  private_subnet_ids = module.network.private_subnet_ids
+
+  # identity wiring (separate task roles per service — keeps V-CLD-05 fix)
+  payments_task_role_arn = module.identity.payments_task_role_arn
+  payments_exec_role_arn = module.identity.payments_exec_role_arn
+  kyc_task_role_arn      = module.identity.kyc_task_role_arn
+  kyc_exec_role_arn      = module.identity.kyc_exec_role_arn
 }
 
 module "observability" {

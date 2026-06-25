@@ -57,3 +57,21 @@ output "kyc_bucket" {
 output "redis_endpoint" {
   value = module.data.redis_endpoint
 }
+
+# --- Compute & Edge (Day 11) ---
+output "alb_dns_name" {
+  description = "Public URL of the SentinelPay load balancer."
+  value       = module.compute.alb_dns_name
+}
+
+output "app_security_group_id" {
+  value = module.compute.app_security_group_id
+}
+
+output "waf_acl_arn" {
+  value = module.compute.waf_acl_arn
+}
+
+output "ecs_cluster_name" {
+  value = module.compute.ecs_cluster_name
+}
