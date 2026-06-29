@@ -1,0 +1,22 @@
+# Reusable stub: SAST (Semgrep/Bandit) - Day 16.
+# Day 15 scaffold — the real gate logic is added on the day noted above.
+# Until then this stub SUCCEEDS but prints what it will enforce, so the
+# orchestrator wiring and branch-protection required-checks can be set up now.
+name: reusable-sast
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "STAGE: SAST (Semgrep/Bandit) - Day 16"
+          echo "This stage will run as a BLOCKING gate with a tuned severity threshold."
+          echo "Scaffold OK."

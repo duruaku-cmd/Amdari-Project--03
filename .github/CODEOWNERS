@@ -1,0 +1,6 @@
+# Required reviewers for SentinelPay. A PR touching these paths needs review
+# from the owner before it can merge (separation of duties; supports V-PIP-04).
+*                       @duruaku-cmd
+/.github/workflows/     @duruaku-cmd
+/infra/                 @duruaku-cmd
+/policy/                @duruaku-cmd

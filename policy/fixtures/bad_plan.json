@@ -1,0 +1,31 @@
+{
+  "resource_changes": [
+    {
+      "address": "aws_s3_bucket_public_access_block.leaky",
+      "type": "aws_s3_bucket_public_access_block",
+      "change": { "after": {
+        "block_public_acls": false, "block_public_policy": false,
+        "ignore_public_acls": false, "restrict_public_buckets": false
+      }}
+    },
+    {
+      "address": "aws_security_group.wide_open",
+      "type": "aws_security_group",
+      "change": { "after": { "ingress": [
+        { "from_port": 5432, "to_port": 5432, "cidr_blocks": ["0.0.0.0/0"] }
+      ]}}
+    },
+    {
+      "address": "aws_db_instance.plaintext",
+      "type": "aws_db_instance",
+      "change": { "after": { "storage_encrypted": false } }
+    },
+    {
+      "address": "aws_iam_role_policy.admin",
+      "type": "aws_iam_role_policy",
+      "change": { "after": {
+        "policy": "{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
+      }}
+    }
+  ]
+}
