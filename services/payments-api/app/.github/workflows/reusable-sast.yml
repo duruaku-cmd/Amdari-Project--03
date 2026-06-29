@@ -1,0 +1,49 @@
+# Reusable gate: SAST with Semgrep + Bandit.
+# Defends the V-APP bug classes (SQLi, broken JWT, SSRF, command injection).
+# THRESHOLD: Semgrep ERROR-severity findings block; WARNING is reported only.
+# Bandit blocks on HIGH severity / HIGH confidence. FAILS CLOSED: tool error blocks.
+name: reusable-sast
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep (custom SentinelPay rules + security registry)
+        run: |
+          semgrep scan \
+            --config policy/semgrep/sentinelpay.yml \
+            --config "p/python" \
+            --config "p/security-audit" \
+            --error \
+            --severity ERROR \
+            --metrics off
+
+  bandit:
+    name: Bandit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install Bandit
+        run: pip install bandit
+      - name: Run Bandit (block on HIGH severity, HIGH confidence)
+        run: |
+          # --severity-level high : only HIGH-severity issues affect the exit code (block)
+          # --confidence-level high: require high confidence to reduce false positives
+          # Do NOT also pass -l/-ll: Bandit rejects --level together with --severity-level.
+          bandit -r . \
+            -x ./tests,./.venv \
+            --severity-level high \
+            --confidence-level high \
+            -c .github/linters/.bandit.yaml

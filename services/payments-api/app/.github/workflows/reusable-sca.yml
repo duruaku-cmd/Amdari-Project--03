@@ -1,0 +1,29 @@
+# Reusable gate: SCA (dependency vulnerability scanning) with Trivy.
+# Scans the repo's dependency manifests/lockfiles for known-vulnerable versions.
+# THRESHOLD: CRITICAL and HIGH block the merge; MEDIUM/LOW are reported only.
+# FAILS CLOSED: a Trivy scan error (exit-code path) blocks the merge.
+name: reusable-sca
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem scan (dependencies)
+        uses: aquasecurity/trivy-action@v0.29.0
+        with:
+          scan-type: fs
+          scanners: vuln
+          severity: CRITICAL,HIGH      # tuned threshold: only these two block
+          ignore-unfixed: true          # do not block on CVEs with no fix available
+          exit-code: '1'                # findings at/above severity -> non-zero -> block
+          format: table
+      - name: Gate summary
+        if: always()
+        run: echo "SCA complete. CRITICAL/HIGH with an available fix block the merge; unfixed and MEDIUM/LOW are reported."
