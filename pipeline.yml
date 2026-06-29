@@ -1,0 +1,77 @@
+# =============================================================================
+#  SentinelPay CI/CD Security Pipeline  -  ORCHESTRATOR  (D-06)
+#  Runs on every pull request to main. Each stage is a REUSABLE workflow
+#  (not duplicated YAML). Stages added across Days 16-18 are wired here as
+#  blocking gates. The pipeline FAILS CLOSED: any job error blocks the merge.
+# =============================================================================
+name: SentinelPay Pipeline
+on:
+  pull_request:
+    branches: [ main ]
+  # Allow manual runs for testing the skeleton
+  workflow_dispatch:
+# Least-privilege default for the whole pipeline. Jobs that need AWS request
+# id-token at the job level; nothing here may write to the repo contents.
+permissions:
+  contents: read
+# Cancel superseded runs on the same PR to save minutes (still fails closed:
+# a cancelled required check is not a passing check).
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  # ---- Day 16: secret scanning + SAST + SCA ----------------------------------
+  secret-scan:
+    name: Secret Scanning
+    uses: ./.github/workflows/reusable-secret-scan.yml
+  sast:
+    name: SAST
+    uses: ./.github/workflows/reusable-sast.yml
+  sca:
+    name: Dependency Scan (SCA)
+    uses: ./.github/workflows/reusable-sca.yml
+  # ---- Day 17: IaC scanning + container scan + image signing -----------------
+  iac-scan:
+    name: IaC Scan + OPA
+    uses: ./.github/workflows/reusable-iac-scan.yml
+  # ---- Day 18: ephemeral DAST (OWASP ZAP vs live containerised app) -----------
+  dast:
+    name: Ephemeral DAST
+    needs: [ iac-scan ]   # run after IaC passes; scans the real running app
+    uses: ./.github/workflows/reusable-dast.yml
+    with:
+      target_service: payments-api
+      target_port: 8001
+  # ---- Day 17: build, scan, SBOM, sign (supply-chain integrity) --------------
+  supply-chain:
+    name: Supply Chain (build/scan/SBOM/sign)
+    needs: [ secret-scan, sast, sca, iac-scan ]
+    uses: ./.github/workflows/reusable-supply-chain.yml
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+  # ---- Day 15: prove OIDC trust works and the role is NOT admin (V-PIP-03) ---
+  verify-deploy-identity:
+    name: Verify Deploy Identity (OIDC)
+    needs: [ secret-scan, sast, sca, iac-scan ]   # gate: only after checks pass
+    uses: ./.github/workflows/reusable-oidc-verify.yml
+    permissions:
+      id-token: write     # required to request the OIDC token
+      contents: read
+  # ---- Final gate: everything green, fail closed -----------------------------
+  pipeline-status:
+    name: Pipeline Status (fail closed)
+    needs: [ secret-scan, sast, sca, iac-scan, dast, supply-chain, verify-deploy-identity ]
+    runs-on: ubuntu-latest
+    if: always()    # run even if a needed job failed, so we can fail explicitly
+    steps:
+      - name: Enforce all gates passed
+        run: |
+          echo "Evaluating upstream gate results (fail-closed policy)..."
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ] || \
+             [ "${{ contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "::error::One or more security gates failed, errored, or were cancelled. Blocking merge."
+            exit 1
+          fi
+          echo "All security gates passed. Merge permitted."
