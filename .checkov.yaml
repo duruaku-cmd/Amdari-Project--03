@@ -50,3 +50,6 @@ skip-check:
   - CKV_AWS_150   # ALB deletion protection — the lab must support teardown; enable in production.
   - CKV2_AWS_62   # S3 event notifications — low value for the lab; can be added in production.
   - CKV_AWS_144   # S3 cross-region replication u2014 single-region lab; production recommendation.
+  - CKV_AWS_91    # ALB access logging — no dedicated ALB-log bucket in lab; prod rec.
+  - CKV_AWS_18    # S3 access logging on trail bucket — needs a second log bucket; KYC bucket already logs. Prod rec.
+  - CKV_AWS_21    # S3 versioning — only the gated config bucket (count=0, not deployed).

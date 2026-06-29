@@ -1,0 +1,6 @@
+# ADD these lines to .checkov.yaml under skip-check (justified skips):
+
+  - CKV_AWS_91    # ALB access logging — no dedicated ALB-log S3 bucket provisioned in the Free-Tier lab; production recommendation.
+  - CKV_AWS_18    # S3 access logging on the trail bucket — would require a second dedicated log bucket; the KYC bucket already has access logging. Prod rec.
+  - CKV_AWS_21    # S3 versioning — only flags the gated 'config' bucket (count=0, not deployed). N/A in this account.
+  - CKV_AWS_145   # kyc_logs + gated config bucket — the access-LOG target bucket uses AES256 by design (SSE-KMS on an S3 log-delivery target blocks log delivery). KYC data bucket itself IS KMS-encrypted. Justified.
