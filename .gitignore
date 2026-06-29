@@ -1,13 +1,18 @@
-__pycache__/
-*.pyc
-*.pyo
-.venv/
-venv/
-.env
-.DS_Store
-*.egg-info/
-.pytest_cache/
-.coverage
-htmlcov/
-node_modules/
-*.log
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+# Sensitive var files
+*.tfvars
+*.tfvars.json
+!example.tfvars
+# Local overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl.bak

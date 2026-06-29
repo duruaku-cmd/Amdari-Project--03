@@ -50,3 +50,18 @@ false-positiving on the correct, parameterised, strictly-verified equivalents.
 
 - Fills Day-15 stubs: reusable-secret-scan, reusable-sast, reusable-sca.
 - Supports OBJ-05 (pipeline security gates) and the V-APP / V-CLD-04 defence.
+
+## Addendum (first-run results)
+
+The first pipeline run surfaced two issues, both now resolved:
+
+- **Bandit** failed on an argument conflict (`-ll` together with
+  `--severity-level`). Corrected to use only `--severity-level high
+  --confidence-level high`; verified locally to block on HIGH and pass on clean.
+- **Trivy action** referenced a non-existent tag `0.24.0`; corrected to `0.28.0`.
+
+The **secret-scan gate worked as intended on first run**, blocking the merge on 5
+hardcoded placeholder credentials in inherited history (V-CLD-04 evidence). These
+were remediated in current files (env-var references), the blocking scan was
+scoped to new commits, and the 5 legacy findings were pinned in `.gitleaksignore`
+as documented exceptions. See docs/SECRET-REMEDIATION.md.

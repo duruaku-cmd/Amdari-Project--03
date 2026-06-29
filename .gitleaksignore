@@ -1,0 +1,16 @@
+# Known legacy findings in inherited history. These are PLACEHOLDER/example values
+# (e.g. the AWS docs example key), assessed as non-exploitable. The insecure
+# PATTERN has been remediated in current files (secrets moved to env vars).
+# History is retained deliberately; these specific fingerprints are documented
+# exceptions so they do not block every future merge. New secrets still block.
+#
+# Each line pins one exact finding (commit:path:rule:line). Reviewed by: Emmanuel Duruaku.
+
+# AWS example keys hardcoded in docker-compose.yml (lines 32, 51)
+e253f31ffb6b9a48e4fc265d62b6fc303bf8cc5a:docker-compose.yml:sentinelpay-aws-access-key:32
+e253f31ffb6b9a48e4fc265d62b6fc303bf8cc5a:docker-compose.yml:sentinelpay-aws-access-key:51
+
+# AWS example key + placeholder partner/Slack values in scripts/legacy_deploy.sh
+d43665a8b6c820c255041997034521db47cc3b61:scripts/legacy_deploy.sh:sentinelpay-aws-access-key:10
+d43665a8b6c820c255041997034521db47cc3b61:scripts/legacy_deploy.sh:stripe-access-token:21
+d43665a8b6c820c255041997034521db47cc3b61:scripts/legacy_deploy.sh:slack-webhook-url:18
