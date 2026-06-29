@@ -42,6 +42,16 @@ jobs:
     name: IaC Scan + OPA
     uses: ./.github/workflows/reusable-iac-scan.yml
 
+  # ---- Day 17: build, scan, SBOM, sign (supply-chain integrity) --------------
+  supply-chain:
+    name: Supply Chain (build/scan/SBOM/sign)
+    needs: [ secret-scan, sast, sca, iac-scan ]
+    uses: ./.github/workflows/reusable-supply-chain.yml
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+
   # ---- Day 15: prove OIDC trust works and the role is NOT admin (V-PIP-03) ---
   verify-deploy-identity:
     name: Verify Deploy Identity (OIDC)
@@ -54,7 +64,7 @@ jobs:
   # ---- Final gate: everything green, fail closed -----------------------------
   pipeline-status:
     name: Pipeline Status (fail closed)
-    needs: [ secret-scan, sast, sca, iac-scan, verify-deploy-identity ]
+    needs: [ secret-scan, sast, sca, iac-scan, supply-chain, verify-deploy-identity ]
     runs-on: ubuntu-latest
     if: always()    # run even if a needed job failed, so we can fail explicitly
     steps:

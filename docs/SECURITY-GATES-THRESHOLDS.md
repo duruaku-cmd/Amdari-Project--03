@@ -34,3 +34,14 @@ OPA-policy exception process and directly answers the brief's exception question
 - **Day 17:** IaC scan (Checkov/tfsec) blocks on HIGH+; OPA policy gate blocks on any
   deny; Trivy image scan blocks on CRITICAL/HIGH; Cosign signing is mandatory.
 - **Day 18:** ZAP DAST baseline blocks on the documented alert threshold.
+
+## Day 17 — IaC, Container & Supply-Chain Gates
+
+| Gate | Tool | Blocking threshold | Why tuned here |
+| --- | --- | --- | --- |
+| IaC (generic) | Checkov | Any finding not in the documented skip list | Broad AWS misconfig coverage; skips are explicit and justified in `.checkov.yaml`. |
+| IaC (generic) | tfsec | Any finding | Complements Checkov; different rule engine catches different issues. |
+| IaC (custom) | OPA/conftest | Any `deny` | The SentinelPay baseline is non-negotiable (no public S3, no open ingress, encryption, no IAM wildcards). |
+| Container image | Trivy (image) | CRITICAL/HIGH with a fix | Same tuning as dependency scan; covers base-image layers. |
+| Image signing | Cosign keyless | Unsigned = block at verify | Signing is mandatory; `verify-image.sh` fails closed. |
+| SBOM | Syft (CycloneDX) | Missing SBOM = block at verify | Every image must carry a signed bill of materials. |

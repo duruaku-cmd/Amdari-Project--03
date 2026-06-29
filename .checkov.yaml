@@ -1,0 +1,12 @@
+# Checkov configuration for SentinelPay Terraform.
+# Blocks on findings by default (soft_fail=false in the workflow). The skip list
+# below is explicit and justified, mirroring the "tuned, not silenced" principle.
+framework:
+  - terraform
+skip-check:
+  # CKV_AWS_18: S3 access logging — handled on the KYC/CloudTrail buckets that
+  # need it; skipped globally to avoid noise on internal buckets where it is not
+  # required. Reviewed.
+  - CKV_AWS_144  # cross-region replication (not required for this single-region lab)
+compact: true
+quiet: true
