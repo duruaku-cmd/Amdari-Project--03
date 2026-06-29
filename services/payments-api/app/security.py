@@ -68,7 +68,7 @@ def verify_password(password: str, stored_hash: str):
     (migrate-on-login — no forced password reset).
     """
     if _looks_like_md5(stored_hash):
-        legacy = hashlib.md5(password.encode()).hexdigest()
+        legacy = hashlib.md5(password.encode(), usedforsecurity=False).hexdigest() 
         if hmac.compare_digest(legacy, stored_hash.lower()):
             return True, (hash_password(password) if _ARGON2_AVAILABLE else None)
         return False, None

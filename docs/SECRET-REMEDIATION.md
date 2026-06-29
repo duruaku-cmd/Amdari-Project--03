@@ -21,8 +21,7 @@ blocked the merge.
 ## Assessment
 
 All five values were assessed and confirmed to be **placeholder / example values**
-(e.g. the canonical AWS documentation key `AKIAIOSFODNN7EXAMPLE`). They are not
-live credentials and carry no exploitation risk. The problem they represent is the
+ They are not live credentials and carry no exploitation risk. The problem they represent is the
 **insecure pattern** — secrets written into committed files — not an active leak.
 
 ## Remediation (proper, not suppression)

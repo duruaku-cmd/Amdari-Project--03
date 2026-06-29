@@ -7,7 +7,7 @@
 
 set -e
 
-export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+: "${AWS_ACCESS_KEY_ID:?Set AWS_ACCESS_KEY_ID in the environment (never hardcode)}"
 export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 export AWS_REGION=af-south-1
 
@@ -15,10 +15,10 @@ export AWS_REGION=af-south-1
 export PROD_DB_PASSWORD="Sent!nelPr0d_2024_Master"
 
 # Slack webhook for the #payments-ops channel.
-export SLACK_WEBHOOK="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+: "${SLACK_WEBHOOK:?Set SLACK_WEBHOOK in the environment}"
 
 # Stripe-equivalent partner sandbox key.
-export PARTNER_API_KEY="sk_live_51HxFakeKeyForTrainingPurposesOnly9876543210"
+: "${PARTNER_API_KEY:?Set PARTNER_API_KEY in the environment}"
 
 echo "Deploying SentinelPay payments-api to af-south-1..."
 echo "(This script is a stub; the real deploy is now in GitHub Actions.)"
