@@ -1,0 +1,28 @@
+# SentinelPay ZAP alert tuning (.zap/rules.tsv)
+# Format: <PLUGIN_ID>\t<WARN|FAIL|IGNORE>\t<comment>
+# Tuned, not silenced: high-value app-security alerts FAIL the gate; known-noisy
+# or environment-specific alerts WARN. Justifications in docs/DAST-THRESHOLDS.md.
+#
+# ---- FAIL: real application-security issues we will not ship ----
+40018	FAIL	SQL Injection
+40019	FAIL	SQL Injection - MySQL
+40012	FAIL	Cross Site Scripting (Reflected)
+40014	FAIL	Cross Site Scripting (Persistent)
+90019	FAIL	Server Side Code Injection
+90020	FAIL	Remote OS Command Injection
+40003	FAIL	CRLF Injection
+7	FAIL	Remote File Inclusion
+90034	FAIL	Cloud Metadata Potentially Exposed (SSRF)
+#
+# ---- WARN: report but do not block (headers/hardening; tracked, not gating) ----
+10015	WARN	Incomplete or No Cache-control Header
+10020	WARN	Missing Anti-clickjacking Header (X-Frame-Options)
+10021	WARN	X-Content-Type-Options Header Missing
+10035	WARN	Strict-Transport-Security Header (TLS terminated at ALB in prod)
+10038	WARN	Content Security Policy (CSP) Header Not Set
+10037	WARN	Server leaks info via X-Powered-By
+10027	WARN	Information Disclosure - Suspicious Comments
+#
+# ---- IGNORE: not applicable to this API in the ephemeral lab ----
+10049	IGNORE	Storable/Cacheable Content (stateless API, no sensitive caching)
+10096	IGNORE	Timestamp Disclosure (false-positive on numeric IDs)

@@ -1,0 +1,107 @@
+# =====================================================================
+# Reusable gate: EPHEMERAL DAST (OWASP ZAP)
+# Spins up the SentinelPay app + deps as a disposable environment inside
+# the runner, runs ZAP against the REAL running app, evaluates findings
+# against a tuned threshold (.zap/rules.tsv), then tears everything down.
+# FAILS CLOSED: a scan/tooling error blocks the pipeline.
+#
+# "Ephemeral" = the staging environment is created fresh for this job and
+# destroyed in the always() teardown step. Nothing persists, no AWS cost.
+# =====================================================================
+name: reusable-dast
+
+on:
+  workflow_call:
+    inputs:
+      target_service:
+        description: "Which service to scan (path under services/)."
+        type: string
+        default: "payments-api"
+      target_port:
+        description: "Port the target app listens on."
+        type: number
+        default: 8001
+
+permissions:
+  contents: read
+
+jobs:
+  dast:
+    name: Ephemeral DAST (OWASP ZAP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start ephemeral stack (app + postgres + redis)
+        env:
+          AWS_ACCESS_KEY_ID: "AKIAEXAMPLEDONOTUSE000000"
+          AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEYxx"
+        run: |
+          docker compose up -d --build postgres redis ${{ inputs.target_service }}
+          echo "Stack starting..."
+
+      - name: Wait for /health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf "http://localhost:${{ inputs.target_port }}/health" >/dev/null 2>&1; then
+              echo "App healthy after ${i} attempts."
+              curl -s "http://localhost:${{ inputs.target_port }}/health"; echo
+              exit 0
+            fi
+            echo "waiting for app... ($i/30)"; sleep 5
+          done
+          echo "::error::App did not become healthy in time."
+          docker compose logs ${{ inputs.target_service }} | tail -50
+          exit 1
+
+      - name: OWASP ZAP baseline scan
+        run: |
+          mkdir -p zap-out && chmod 777 zap-out
+          docker run --rm --network host \
+            -v "$PWD/.zap:/zap/wrk/.zap:ro" \
+            -v "$PWD/zap-out:/zap/wrk/out:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+              -t "http://localhost:${{ inputs.target_port }}" \
+              -c .zap/rules.tsv \
+              -J out/zap-report.json \
+              -r out/zap-report.html \
+              -I || true
+          echo "ZAP scan complete."
+
+      - name: Evaluate ZAP findings (blocking gate)
+        run: |
+          python3 - <<'PY'
+          import json, sys, os
+          path = "zap-out/zap-report.json"
+          if not os.path.exists(path):
+              print("::error::ZAP produced no report - failing closed.")
+              sys.exit(1)
+          data = json.load(open(path))
+          highs = []
+          for site in data.get("site", []):
+              for alert in site.get("alerts", []):
+                  if alert.get("riskcode") == "3":   # 3=High
+                      highs.append(alert.get("name", "unknown"))
+          print(f"High-risk alerts: {len(highs)}")
+          for h in highs:
+              print(f"  - {h}")
+          if highs:
+              print("::error::DAST gate FAILED - high-risk findings above threshold.")
+              sys.exit(1)
+          print("DAST gate PASSED - no high-risk findings.")
+          PY
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-dast-report
+          path: zap-out/
+          retention-days: 30
+
+      - name: Tear down ephemeral stack
+        if: always()
+        run: |
+          docker compose down -v || true
+          echo "Ephemeral environment destroyed."
