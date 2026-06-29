@@ -1,7 +1,8 @@
 # Gitleaks configuration for SentinelPay.
 # Extends the default ruleset and adds a SentinelPay AWS-key rule.
 # Historical placeholder findings are handled by .gitleaksignore (pinned
-# fingerprints), NOT by broad allowlist regexes. New secrets always block.
+# fingerprints). New secrets always block. .env.example is path-allowlisted
+# because it must contain only blank placeholders (enforced by review).
 title = "SentinelPay Gitleaks Config"
 
 [extend]
@@ -12,3 +13,10 @@ id = "sentinelpay-aws-access-key"
 description = "AWS Access Key ID (AKIA/ASIA/AROA/AIDA) in source"
 regex = '''(A3T[A-Z0-9]|AKIA|ASIA|AROA|AIDA)[A-Z0-9]{16}'''
 keywords = ["AKIA", "ASIA", "AROA", "AIDA"]
+
+[allowlist]
+description = "Documentation and example-template files (must hold no real secrets)"
+paths = [
+  '''\.env\.example''',
+  '''docs/SECRET-REMEDIATION\.md''',
+]

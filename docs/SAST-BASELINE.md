@@ -14,3 +14,11 @@ state.
 - **Trivy (deps):** 0 CRITICAL/HIGH fixable findings at baseline.
 
 Any deviation above threshold on a PR is a regression and blocks merge.
+
+## Accepted SAST exceptions (reviewed)
+
+- **Bandit B324 — security.py (legacy MD5 verify):** accepted via scoped
+  `# nosec B324` + `usedforsecurity=False`. The MD5 call verifies an existing
+  legacy hash during password migration and immediately upgrades the password to
+  Argon2; MD5 is never used to store a new password. The exception is scoped to
+  the single reviewed line; all other MD5 usage still blocks.

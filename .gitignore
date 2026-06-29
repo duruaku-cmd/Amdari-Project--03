@@ -16,3 +16,7 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 .terraform.lock.hcl.bak
+
+.env
+*.pem
+*.key
