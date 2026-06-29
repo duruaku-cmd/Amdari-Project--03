@@ -33,9 +33,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Start ephemeral stack (app + postgres + redis)
-        env:
-          AWS_ACCESS_KEY_ID: "AKIAEXAMPLEDONOTUSE000000"
-          AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEYxx"
         run: |
           docker compose up -d --build postgres redis ${{ inputs.target_service }}
           echo "Stack starting..."
