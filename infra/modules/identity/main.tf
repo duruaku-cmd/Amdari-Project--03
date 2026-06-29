@@ -76,9 +76,9 @@ resource "aws_iam_role_policy_attachment" "kyc_exec" {
 # policy then narrows WHO may assume it down to one repo and one branch.
 # ---------------------------------------------------------------------
 resource "aws_iam_openid_connect_provider" "github" {
-  count           = var.create_github_oidc_provider ? 1 : 0
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
+  count          = var.create_github_oidc_provider ? 1 : 0
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
   # GitHub's OIDC thumbprint. AWS now validates the cert chain directly, but
   # the field is still required by the API.
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]

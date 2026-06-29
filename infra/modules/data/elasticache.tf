@@ -56,15 +56,15 @@ resource "aws_security_group_rule" "redis_ingress_from_app" {
 }
 
 resource "aws_elasticache_replication_group" "main" {
-  count                      = var.enable_elasticache ? 1 : 0
-  replication_group_id       = "${var.name_prefix}-redis"
-  description                = "SentinelPay session/cache store"
-  engine                     = "redis"
-  node_type                  = var.elasticache_node_type
-  num_cache_clusters         = 1
-  port                       = 6379
-  subnet_group_name          = aws_elasticache_subnet_group.main[0].name
-  security_group_ids         = [aws_security_group.redis[0].id]
+  count                = var.enable_elasticache ? 1 : 0
+  replication_group_id = "${var.name_prefix}-redis"
+  description          = "SentinelPay session/cache store"
+  engine               = "redis"
+  node_type            = var.elasticache_node_type
+  num_cache_clusters   = 1
+  port                 = 6379
+  subnet_group_name    = aws_elasticache_subnet_group.main[0].name
+  security_group_ids   = [aws_security_group.redis[0].id]
 
   # Encryption: in transit (TLS) AND at rest (CMK), AUTH token from Secrets Manager.
   transit_encryption_enabled = true

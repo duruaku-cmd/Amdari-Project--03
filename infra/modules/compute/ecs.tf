@@ -37,9 +37,9 @@ resource "aws_ecs_task_definition" "payments" {
 
   container_definitions = jsonencode([
     {
-      name      = "payments-api"
-      image     = var.payments_image
-      essential = true
+      name         = "payments-api"
+      image        = var.payments_image
+      essential    = true
       portMappings = [{ containerPort = var.payments_container_port, protocol = "tcp" }]
       logConfiguration = {
         logDriver = "awslogs"
@@ -66,9 +66,9 @@ resource "aws_ecs_task_definition" "kyc" {
 
   container_definitions = jsonencode([
     {
-      name      = "kyc-api"
-      image     = var.kyc_image
-      essential = true
+      name         = "kyc-api"
+      image        = var.kyc_image
+      essential    = true
       portMappings = [{ containerPort = var.kyc_container_port, protocol = "tcp" }]
       logConfiguration = {
         logDriver = "awslogs"

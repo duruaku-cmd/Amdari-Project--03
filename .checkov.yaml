@@ -49,3 +49,4 @@ skip-check:
   - CKV_AWS_252   # CloudTrail SNS topic — optional; CloudTrail already streams to CloudWatch Logs.
   - CKV_AWS_150   # ALB deletion protection — the lab must support teardown; enable in production.
   - CKV2_AWS_62   # S3 event notifications — low value for the lab; can be added in production.
+  - CKV_AWS_144   # S3 cross-region replication u2014 single-region lab; production recommendation.

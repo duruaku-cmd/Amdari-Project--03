@@ -18,9 +18,9 @@ locals {
 data "aws_iam_policy_document" "data_kms" {
   # --- ADMIN statement: manage the key policy, but this set is for administration ---
   statement {
-    sid       = "KeyAdministration"
-    effect    = "Allow"
-    actions   = [
+    sid    = "KeyAdministration"
+    effect = "Allow"
+    actions = [
       "kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*",
       "kms:Put*", "kms:Update*", "kms:Revoke*", "kms:Disable*",
       "kms:Get*", "kms:Delete*", "kms:TagResource", "kms:UntagResource",
@@ -35,9 +35,9 @@ data "aws_iam_policy_document" "data_kms" {
 
   # --- USE statement: encrypt/decrypt for the data services, no policy control ---
   statement {
-    sid       = "KeyUsageByServices"
-    effect    = "Allow"
-    actions   = [
+    sid    = "KeyUsageByServices"
+    effect = "Allow"
+    actions = [
       "kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*",
       "kms:GenerateDataKey*", "kms:DescribeKey",
     ]
@@ -55,7 +55,7 @@ data "aws_iam_policy_document" "data_kms" {
     actions   = ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant"]
     resources = ["*"]
     principals {
-      type        = "Service"
+      type = "Service"
       identifiers = [
         "rds.amazonaws.com",
         "s3.amazonaws.com",
