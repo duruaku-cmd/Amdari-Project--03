@@ -1,0 +1,10 @@
+flask==3.0.3
+werkzeug==3.0.3
+psycopg2-binary==2.9.9
+redis==4.5.4
+pyjwt==2.13.0
+requests==2.32.4
+boto3==1.34.0
+gunicorn==22.0.0
+python-dateutil==2.8.2
+argon2-cffi==23.1.0
