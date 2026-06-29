@@ -14,3 +14,6 @@ e253f31ffb6b9a48e4fc265d62b6fc303bf8cc5a:docker-compose.yml:sentinelpay-aws-acce
 d43665a8b6c820c255041997034521db47cc3b61:scripts/legacy_deploy.sh:sentinelpay-aws-access-key:10
 d43665a8b6c820c255041997034521db47cc3b61:scripts/legacy_deploy.sh:stripe-access-token:21
 d43665a8b6c820c255041997034521db47cc3b61:scripts/legacy_deploy.sh:slack-webhook-url:18
+
+# Fake placeholder AWS key in DAST workflow env (since removed from current file)
+89620daa50e11215201cd4100c73b4dc474300a1:.github/workflows/reusable-dast.yml:sentinelpay-aws-access-key:37
