@@ -20,3 +20,5 @@ override.tf.json
 .env
 *.pem
 *.key
+
+policy/plan.json

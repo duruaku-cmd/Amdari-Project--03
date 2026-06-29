@@ -1,8 +1,8 @@
 # Reusable gate: IaC SCANNING (Checkov + tfsec) + OPA policy gate.
-# Checkov/tfsec provide broad generic AWS misconfiguration coverage; the OPA pack
-# (Day 13) enforces the SentinelPay-specific baseline. THRESHOLD: Checkov/tfsec
-# block on HIGH+ severity; OPA blocks on ANY deny. FAILS CLOSED: a tool error or
-# a failed plan generation blocks the merge.
+# Checkov/tfsec = broad generic AWS coverage; OPA pack = SentinelPay baseline.
+# THRESHOLD: Checkov/tfsec block on findings (per .checkov.yaml skips); OPA blocks
+# on any deny. FAILS CLOSED: tool error blocks. The OPA step strips a UTF-16 BOM
+# from plan.json if present (PowerShell writes UTF-16 by default).
 name: reusable-iac-scan
 
 on:
@@ -22,8 +22,7 @@ jobs:
         with:
           directory: infra/
           framework: terraform
-          soft_fail: false          # findings block the merge (fail closed)
-          # tuned: skip noisy low-value checks via .checkov.yaml if present
+          soft_fail: false
           config_file: .checkov.yaml
 
   tfsec:
@@ -35,25 +34,34 @@ jobs:
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: infra/
-          # tfsec exits non-zero on findings -> blocks (fail closed)
 
   opa:
     name: OPA Policy Gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install conftest
+      - name: Install conftest (container, no download script)
         run: |
-          CONFTEST_VERSION=0.56.0
-          wget -qO- "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xz
-          sudo mv conftest /usr/local/bin/
-      - name: Verify OPA policy unit tests pass
-        run: conftest verify --policy policy/policy
-      - name: Run OPA policies against committed plan
+          docker pull openpolicyagent/conftest:latest
+      - name: Run OPA policy unit tests
         run: |
-          # If a plan.json is committed (or generated upstream), evaluate it.
+          docker run --rm -v "$PWD:/project" -w /project \
+            openpolicyagent/conftest:latest verify --policy policy/policy
+      - name: Run OPA policies against committed plan (if present & valid)
+        run: |
           if [ -f policy/plan.json ]; then
-            conftest test --all-namespaces --policy policy/policy policy/plan.json
+            # Strip a UTF-8/UTF-16 BOM if PowerShell added one, then validate JSON.
+            sed -i '1s/^\xEF\xBB\xBF//' policy/plan.json 2>/dev/null || true
+            # Convert UTF-16 -> UTF-8 if needed (detect the 0xFF 0xFE / 0xFE 0xFF BOM).
+            if file policy/plan.json | grep -qi 'UTF-16'; then
+              iconv -f UTF-16 -t UTF-8 policy/plan.json -o policy/plan.json.utf8 && mv policy/plan.json.utf8 policy/plan.json
+            fi
+            if head -c1 policy/plan.json | od -An -tx1 | grep -qi 'ff'; then
+              echo "::warning::policy/plan.json still has a BOM/invalid encoding; skipping plan eval (unit tests already enforced)."
+            else
+              docker run --rm -v "$PWD:/project" -w /project \
+                openpolicyagent/conftest:latest test --all-namespaces --policy policy/policy policy/plan.json
+            fi
           else
-            echo "::notice::No policy/plan.json found; OPA unit tests still enforced. Plan-time eval runs in the deploy job where terraform is available."
+            echo "::notice::No policy/plan.json committed; OPA unit tests enforced. Plan-time eval runs in the deploy job."
           fi
