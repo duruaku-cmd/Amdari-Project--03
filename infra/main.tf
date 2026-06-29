@@ -58,6 +58,7 @@ module "compute" {
   payments_exec_role_arn = module.identity.payments_exec_role_arn
   kyc_task_role_arn      = module.identity.kyc_task_role_arn
   kyc_exec_role_arn      = module.identity.kyc_exec_role_arn
+  kms_key_arn = module.data.kms_key_arn
 }
 
 module "observability" {

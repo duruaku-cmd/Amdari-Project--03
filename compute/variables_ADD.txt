@@ -1,0 +1,5 @@
+
+variable "kms_key_arn" {
+  description = "Customer-managed KMS key ARN for encrypting CloudWatch log groups."
+  type        = string
+}

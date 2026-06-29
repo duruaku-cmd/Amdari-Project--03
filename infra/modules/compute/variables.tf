@@ -88,3 +88,7 @@ variable "payments_rate_limit" {
   type        = number
   default     = 1000
 }
+variable "kms_key_arn" {
+  description = "Customer-managed KMS key ARN for encrypting CloudWatch log groups."
+  type        = string
+}

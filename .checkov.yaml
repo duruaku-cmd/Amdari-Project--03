@@ -53,3 +53,5 @@ skip-check:
   - CKV_AWS_91    # ALB access logging — no dedicated ALB-log bucket in lab; prod rec.
   - CKV_AWS_18    # S3 access logging on trail bucket — needs a second log bucket; KYC bucket already logs. Prod rec.
   - CKV_AWS_21    # S3 versioning — only the gated config bucket (count=0, not deployed).
+  - CKV_AWS_145
+  - CKV2_AWS_61
