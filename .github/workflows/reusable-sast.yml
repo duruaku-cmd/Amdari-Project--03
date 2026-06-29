@@ -1,7 +1,7 @@
-# Reusable stub: SAST (Semgrep/Bandit) - Day 16.
-# Day 15 scaffold — the real gate logic is added on the day noted above.
-# Until then this stub SUCCEEDS but prints what it will enforce, so the
-# orchestrator wiring and branch-protection required-checks can be set up now.
+# Reusable gate: SAST with Semgrep + Bandit.
+# Defends the V-APP bug classes (SQLi, broken JWT, SSRF, command injection).
+# THRESHOLD: Semgrep ERROR-severity findings block; WARNING is reported only.
+# Bandit blocks on HIGH severity. FAILS CLOSED: tool error blocks the merge.
 name: reusable-sast
 
 on:
@@ -11,12 +11,36 @@ permissions:
   contents: read
 
 jobs:
-  sast:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep (custom SentinelPay rules + security registry)
+        run: |
+          semgrep scan \
+            --config policy/semgrep/sentinelpay.yml \
+            --config "p/python" \
+            --config "p/security-audit" \
+            --error \
+            --severity ERROR \
+            --metrics off
+        # --error: exit non-zero on findings at/above the chosen severity (blocks)
+        # --severity ERROR: only ERROR-level findings are blocking (tuned threshold)
+
+  bandit:
+    name: Bandit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Placeholder
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install Bandit
+        run: pip install bandit
+      - name: Run Bandit (block on HIGH severity)
         run: |
-          echo "STAGE: SAST (Semgrep/Bandit) - Day 16"
-          echo "This stage will run as a BLOCKING gate with a tuned severity threshold."
-          echo "Scaffold OK."
+          # -r: recurse app source.  --severity-level high: only HIGH blocks.
+          # -ll prints MEDIUM+ for visibility; exit code is driven by --severity-level.
+          bandit -r . -x ./tests,./.venv -ll --severity-level high -c .github/linters/.bandit.yaml

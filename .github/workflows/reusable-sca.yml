@@ -1,7 +1,7 @@
-# Reusable stub: Dependency Scan (SCA) - Day 16.
-# Day 15 scaffold — the real gate logic is added on the day noted above.
-# Until then this stub SUCCEEDS but prints what it will enforce, so the
-# orchestrator wiring and branch-protection required-checks can be set up now.
+# Reusable gate: SCA (dependency vulnerability scanning) with Trivy.
+# Scans the repo's dependency manifests/lockfiles for known-vulnerable versions.
+# THRESHOLD: CRITICAL and HIGH block the merge; MEDIUM/LOW are reported only.
+# FAILS CLOSED: a Trivy scan error (exit-code path) blocks the merge.
 name: reusable-sca
 
 on:
@@ -15,8 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Placeholder
-        run: |
-          echo "STAGE: Dependency Scan (SCA) - Day 16"
-          echo "This stage will run as a BLOCKING gate with a tuned severity threshold."
-          echo "Scaffold OK."
+      - name: Trivy filesystem scan (dependencies)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scanners: vuln
+          severity: CRITICAL,HIGH      # tuned threshold: only these two block
+          ignore-unfixed: true          # do not block on CVEs with no fix available
+          exit-code: '1'                # findings at/above severity -> non-zero -> block
+          format: table
+      - name: Gate summary
+        if: always()
+        run: echo "SCA complete. CRITICAL/HIGH with an available fix block the merge; unfixed and MEDIUM/LOW are reported."

@@ -1,0 +1,30 @@
+# Gitleaks configuration for SentinelPay.
+# Extends the default ruleset (covers AWS keys, private keys, generic API tokens)
+# and adds an allowlist so test fixtures and docs do not produce false positives.
+title = "SentinelPay Gitleaks Config"
+
+[extend]
+useDefault = true   # inherit Gitleaks' built-in rules (AWS, GCP, private keys, JWTs, etc.)
+
+# A SentinelPay-specific rule: catch the decoy-key NAMING pattern so a real key
+# in that shape is flagged even if it slips the generic AWS rule.
+[[rules]]
+id = "sentinelpay-aws-access-key"
+description = "AWS Access Key ID (AKIA/ASIA) anywhere in the repo"
+regex = '''(A3T[A-Z0-9]|AKIA|ASIA|AROA|AIDA)[A-Z0-9]{16}'''
+keywords = ["AKIA", "ASIA", "AROA", "AIDA"]
+
+[allowlist]
+description = "Paths and values that are intentionally not secrets"
+paths = [
+  '''_baseline/ci\.yml\.INSECURE''',   # the documented insecure sample (annotated, not a live secret)
+  '''(.*?)(test|fixture|example|sample)(.*?)''',
+  '''docs/''',
+  '''README\.md''',
+]
+# The honeytoken's *placeholder* value used in docs is allowlisted; the real
+# decoy key lives only in SSM, never in the repo.
+regexes = [
+  '''AKIAEXAMPLE[A-Z0-9]+''',
+  '''AKIAIOSFODNN7EXAMPLE''',   # the canonical AWS docs example key
+]

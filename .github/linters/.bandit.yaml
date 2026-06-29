@@ -1,0 +1,7 @@
+# Bandit configuration for SentinelPay.
+# Skips test files; the CI invocation (below) sets the blocking threshold.
+exclude_dirs:
+  - '/tests'
+  - '/.venv'
+# We do not skip any test IDs globally; severity gating is done at the CI step
+# (-ll = report MEDIUM+, --severity-level high = the blocking bar).

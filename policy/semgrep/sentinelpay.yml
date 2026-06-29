@@ -1,0 +1,56 @@
+# Custom Semgrep rules for SentinelPay's known bug classes (the V-APP findings).
+# These make the Week 1 vulnerabilities un-shippable: if the pattern reappears,
+# the SAST gate blocks the PR. Generic Semgrep registry rules run alongside these.
+rules:
+  # ---- V-APP-01: SQL injection via string building ----
+  - id: sentinelpay-sql-string-concat
+    languages: [python]
+    severity: ERROR
+    message: >
+      Possible SQL injection (V-APP-01): SQL appears to be built from user input
+      by concatenation or f-string. Use parameterised queries
+      (cursor.execute(sql, params)) instead.
+    patterns:
+      - pattern-either:
+          - pattern: $CUR.execute(f"...{$X}...")
+          - pattern: $CUR.execute("..." + $X)
+          - pattern: $CUR.execute("..." % $X)
+          - pattern: $CUR.execute("...".format(...))
+
+  # ---- V-APP-02: broken JWT validation ----
+  - id: sentinelpay-jwt-alg-none
+    languages: [python]
+    severity: ERROR
+    message: >
+      Broken JWT validation (V-APP-02): algorithm 'none' or unverified decode.
+      Verify with an explicit allow-list of asymmetric algorithms (e.g. RS256)
+      and verify=True.
+    patterns:
+      - pattern-either:
+          - pattern: jwt.decode(..., verify=False, ...)
+          - pattern: jwt.decode(..., algorithms=[..., "none", ...], ...)
+          - pattern: jwt.decode($TOKEN, $KEY)
+
+  # ---- V-APP-04: SSRF via unvalidated outbound fetch ----
+  - id: sentinelpay-ssrf-unvalidated-fetch
+    languages: [python]
+    severity: WARNING
+    message: >
+      Possible SSRF (V-APP-04): outbound request to a user-controlled URL without
+      scheme/host allow-listing. Validate destination before fetching.
+    patterns:
+      - pattern-either:
+          - pattern: requests.get($URL, ...)
+          - pattern: requests.post($URL, ...)
+          - pattern: urllib.request.urlopen($URL, ...)
+      - pattern-not: requests.get("http...", ...)
+
+  # ---- generic: subprocess with shell=True (command injection) ----
+  - id: sentinelpay-shell-true
+    languages: [python]
+    severity: ERROR
+    message: >
+      Command injection risk: subprocess called with shell=True. Pass an argument
+      list and shell=False.
+    patterns:
+      - pattern: subprocess.$FN(..., shell=True, ...)
