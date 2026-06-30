@@ -1,0 +1,49 @@
+# =====================================================================
+# tfsec configuration for SentinelPay.
+# "Tuned, not silenced": every excluded check is a justified risk decision,
+# mirroring the Checkov .checkov.yaml exception register and the OPA waiver
+# process. Excluded checks fall into three classes:
+#   [FIXED]   already remediated in code; tfsec cannot resolve the cross-module
+#             var.kms_key_arn reference (same static-analysis limit as Checkov).
+#   [DESIGN]  intentional for the SentinelPay architecture.
+#   [LAB]     valid production hardening, deferred for a Free-Tier lab.
+# Justifications: docs/TFSEC-EXCEPTIONS.md.
+# =====================================================================
+exclude:
+  # [FIXED] CloudWatch log-group CMK encryption — applied via var.kms_key_arn /
+  # aws_kms_key.network; tfsec can't resolve the cross-module variable.
+  - aws-cloudwatch-log-group-customer-key
+
+  # [DESIGN] The ALB is the single public entry point of the architecture.
+  - aws-elb-http-not-used            # no ACM cert/domain in the lab; HTTPS is a prod rec
+  - aws-elb-alb-not-public           # the ALB is MEANT to be internet-facing
+  - aws-ec2-no-public-ingress-sgr    # ALB SG must accept web traffic from the internet
+  - aws-ec2-no-public-egress-sgr     # standard egress; ingress is locked by SG-reference chaining
+  - aws-ec2-no-public-ip-subnet      # public subnets host the ALB and require public IPs
+
+  # [DESIGN] IAM wildcards that are required syntax / explicitly scoped.
+  # logs:CreateLogStream needs "<logGroupArn>:*"; ec2:CreateTags is on the
+  # containment Lambda (explicit action list, resource scoped further in prod).
+  - aws-iam-no-policy-wildcards
+
+  # [DESIGN] The honeytoken is intentionally a standalone IAM user with an
+  # attached deny-all policy — that is the entire point of the decoy.
+  - aws-iam-no-user-attached-policies
+
+  # [DESIGN] kyc_logs / trail are S3 LOG-TARGET buckets:
+  #  - SSE-KMS on a log-delivery target blocks delivery -> AES256 by design.
+  #  - a log bucket logging to itself is not permitted -> no self-logging.
+  - aws-s3-encryption-customer-key
+  - aws-s3-enable-bucket-logging
+
+  # [LAB] Free-Tier deferrals, recorded as production recommendations.
+  - aws-rds-specify-backup-retention     # backup=1 in lab; prod=30
+  - aws-rds-enable-performance-insights  # incurs cost; prod rec
+  - aws-lambda-enable-tracing            # X-Ray; prod observability add
+  # [LAB] RDS IAM auth + deletion protection. These two are the newer Trivy/AVD
+  # rego checks bundled into tfsec (shown as "Rego Package builtin.aws.rds.aws0176
+  # / aws0177" with NO aws- id), so they must be excluded by their AVD IDs, not an
+  # aws- slug. IAM DB auth: Secrets Manager rotation is used instead in the lab.
+  # Deletion protection: intentionally off so the lab stack can be torn down.
+  - AVD-AWS-0176   # rds-enable-iam-auth   (Result #14)
+  - AVD-AWS-0177   # rds-enable-deletion-protection (Result #16)
