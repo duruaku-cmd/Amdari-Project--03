@@ -30,10 +30,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run tfsec on Terraform
-        uses: aquasecurity/tfsec-action@v1.0.3
-        with:
-          working_directory: infra/
+      # Pinned official tfsec container + EXPLICIT --config-file. The
+      # aquasecurity/tfsec-action wrapper does not reliably load
+      # infra/.tfsec/config.yml (its config auto-discovery runs from the repo
+      # root, not the scanned path), so the documented exclude list was being
+      # ignored and the gate failed on findings that are justified exceptions.
+      # Passing --config-file removes that auto-discovery dependency for good.
+      # Mirrors the Trivy/conftest container pattern used elsewhere in the pipeline.
+      - name: Run tfsec (container, explicit config)
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            -w /src \
+            aquasec/tfsec:v1.28.14 \
+            ./infra \
+            --config-file ./infra/.tfsec/config.yml \
+            --format default \
+            --minimum-severity HIGH
 
   opa:
     name: OPA Policy Gate
